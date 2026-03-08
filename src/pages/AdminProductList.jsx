@@ -1,7 +1,10 @@
+// src/pages/AdminProductList.jsx
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Plus, Package } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import ImageWithPlaceholder from '../components/ImageWithPlaceholder';
 
 const AdminProductList = () => {
   const [products, setProducts] = useState([]);
@@ -9,82 +12,85 @@ const AdminProductList = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchProducts();
+    axios.get(`${import.meta.env.VITE_API_URL}/products`)
+      .then(res => setProducts(res.data))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
-  const fetchProducts = async () => {
+  const handleDelete = async id => {
+    if (!window.confirm('Delete this product?')) return;
     try {
-      const res = await axios.get('http://localhost:5001/api/products');
-      setProducts(res.data);
-    } catch (err) {
-      console.error('Error fetching products:', err);
-    } finally {
-      setLoading(false);
-    }
+      await axios.delete(`${import.meta.env.VITE_API_URL}/products/${id}`);
+      setProducts(p => p.filter(x => x._id !== id));
+    } catch { alert('Failed to delete product.'); }
   };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
-    try {
-      await axios.delete(`http://localhost:5001/api/products/${id}`);
-      // Remove from local state
-      setProducts(products.filter(p => p._id !== id));
-    } catch (err) {
-      console.error('Error deleting product:', err);
-      alert('Failed to delete product');
-    }
-  };
-
-  if (loading) return <div className="py-20 text-center text-gray-400">Loading...</div>;
 
   return (
-    <section className="py-12 px-6">
-      <div className="container mx-auto max-w-6xl">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-white">Manage Products</h1>
-          <button
-            onClick={() => navigate('/admin/add-product')}
-            className="bg-accent hover:bg-red-700 text-white px-4 py-2 rounded-lg"
-          >
-            Add New Product
-          </button>
-        </div>
+    <section className="w-full bg-[#080808]" style={{ minHeight: '100vh', paddingTop: '96px', paddingBottom: '96px' }}>
+      <div className="site-container">
 
-        <div className="bg-white/5 rounded-xl overflow-hidden">
-          <table className="w-full text-left">
-            <thead className="bg-white/10">
-              <tr>
-                <th className="px-6 py-3 text-white">Image</th>
-                <th className="px-6 py-3 text-white">Name</th>
-                <th className="px-6 py-3 text-white">Category</th>
-                <th className="px-6 py-3 text-white">Price</th>
-                <th className="px-6 py-3 text-white">Stock</th>
-                <th className="px-6 py-3 text-white">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/10">
-              {products.map(product => (
-                <tr key={product._id} className="hover:bg-white/5">
-                  <td className="px-6 py-4">
-                    <img src={product.imageUrl} alt={product.name} className="w-16 h-16 object-cover rounded" />
-                  </td>
-                  <td className="px-6 py-4 text-gray-300">{product.name}</td>
-                  <td className="px-6 py-4 text-gray-300 capitalize">{product.category}</td>
-                  <td className="px-6 py-4 text-gray-300">₦{product.price}</td>
-                  <td className="px-6 py-4 text-gray-300">{product.stock}</td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => handleDelete(product._id)}
-                      className="text-red-500 hover:text-red-400 transition"
-                    >
-                      <Trash2 size={20} />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between" style={{ marginBottom: '36px' }}>
+          <div>
+            <h1 className="font-display font-bold text-white tracking-tight" style={{ fontSize: '34px' }}>Products</h1>
+            <p className="font-body text-[#6e6e73]" style={{ fontSize: '14px', marginTop: '4px' }}>{products.length} items in store</p>
+          </div>
+          <button onClick={() => navigate('/admin/add-product')} className="btn-primary">
+            <Plus size={16} strokeWidth={2} /> Add Product
+          </button>
+        </motion.div>
+
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {[...Array(5)].map((_, i) => <div key={i} className="bg-[#111] rounded-2xl animate-pulse" style={{ height: '80px' }} />)}
+          </div>
+        ) : products.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center" style={{ padding: '80px 0' }}>
+            <div className="flex items-center justify-center rounded-2xl" style={{ width: '64px', height: '64px', background: '#111', marginBottom: '16px' }}>
+              <Package size={24} className="text-[#3a3a3a]" strokeWidth={1.5} />
+            </div>
+            <p className="font-body text-[#6e6e73]">No products yet. Add your first product.</p>
+          </div>
+        ) : (
+          <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', overflow: 'hidden' }}>
+            <div className="grid gap-4 font-body text-[#3a3a3a] uppercase tracking-wider"
+              style={{ gridTemplateColumns: '80px 1fr 130px 130px 80px 56px', padding: '14px 24px', fontSize: '11px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              {['Image', 'Product', 'Category', 'Price', 'Stock', ''].map((h, i) => <div key={i}>{h}</div>)}
+            </div>
+            <AnimatePresence>
+              {products.map((product, i) => (
+                <motion.div key={product._id} layout
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  exit={{ opacity: 0, height: 0 }} transition={{ delay: i * 0.03 }}
+                  className="grid gap-4 items-center hover:bg-white/[0.02] transition-colors"
+                  style={{ gridTemplateColumns: '80px 1fr 130px 130px 80px 56px', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div className="rounded-xl overflow-hidden" style={{ width: '52px', height: '52px', background: '#1a1a1a' }}>
+                    <ImageWithPlaceholder src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <p className="font-display font-semibold text-white tracking-tight truncate" style={{ fontSize: '15px' }}>{product.name}</p>
+                    <p className="font-body text-[#6e6e73] line-clamp-1" style={{ fontSize: '12px', marginTop: '2px' }}>{product.description}</p>
+                  </div>
+                  <div>
+                    <span className="font-body capitalize" style={{ background: 'rgba(229,9,20,0.1)', color: '#E50914', fontSize: '12px', padding: '4px 12px', borderRadius: '100px' }}>
+                      {product.category}
+                    </span>
+                  </div>
+                  <div className="font-display font-semibold text-white" style={{ fontSize: '15px' }}>₦{Number(product.price).toLocaleString()}</div>
+                  <div className="font-body text-[#a1a1a6]" style={{ fontSize: '15px' }}>{product.stock}</div>
+                  <div>
+                    <button onClick={() => handleDelete(product._id)}
+                      className="flex items-center justify-center text-[#3a3a3a] hover:text-red-400 transition-colors"
+                      style={{ width: '36px', height: '36px' }}>
+                      <Trash2 size={15} strokeWidth={1.5} />
                     </button>
-                  </td>
-                </tr>
+                  </div>
+                </motion.div>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </AnimatePresence>
+          </div>
+        )}
       </div>
     </section>
   );

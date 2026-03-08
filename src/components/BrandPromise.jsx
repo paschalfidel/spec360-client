@@ -1,121 +1,82 @@
 // src/components/BrandPromise.jsx
-// Displays the "Brand Promise" statement and "Why Choose Us" features together in one section.
-// The "Why Choose Us" cards use a 2-1-2 layout on tablet-sized screens for better visual balance.
-// Fully commented and ready for deployment.
-
-// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import {
-  Clock,
-  Shield,
-  DollarSign,
-  Briefcase,
-  Users,
-} from 'lucide-react';
+import { Clock, Shield, DollarSign, Briefcase, Users } from 'lucide-react';
 
-// Reasons why customers should choose us – each with an icon, title, and short description.
 const reasons = [
-  { icon: Clock, title: 'Fast Service', desc: 'Quick turnaround on repairs and support.' },
-  { icon: Shield, title: 'Trusted Technicians', desc: 'Experienced professionals you can rely on.' },
-  { icon: DollarSign, title: 'Affordable Pricing', desc: 'Competitive rates without hidden costs.' },
-  { icon: Briefcase, title: 'Business Solutions', desc: 'Tailored IT and POS services for businesses.' },
-  { icon: Users, title: 'Personalized Consultation', desc: 'Expert advice to meet your needs.' },
+  { icon: Clock, title: 'Fast Service', desc: 'Quick turnaround on repairs and support requests.' },
+  { icon: Shield, title: 'Trusted Technicians', desc: 'Experienced professionals you can fully rely on.' },
+  { icon: DollarSign, title: 'Affordable Rates', desc: 'Competitive pricing with zero hidden costs.' },
+  { icon: Briefcase, title: 'Business Solutions', desc: 'Tailored IT and POS services for any scale.' },
+  { icon: Users, title: 'Personal Consultation', desc: 'Expert one-on-one advice to meet your needs.' },
 ];
 
 const BrandPromise = () => {
-  // Trigger animations only once when the section enters the viewport
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.2 });
-
-  // Staggered animation for the "Why Choose Us" cards
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 },
-    },
-  };
-
-  // Individual card animation (fade + slide up)
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, duration: 0.5 },
-  };
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.08 });
 
   return (
-    <section
-      id="brand-why" // Used for navigation (e.g., from footer links)
-      className="relative min-h-screen py-20 px-6 flex items-center bg-cover bg-center"
-      style={{ backgroundImage: "url('/images/brand-promise.png')" }}
-    >
-      {/* Dark gradient overlay for text readability – keeps the background visible but subdued */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/70 to-black/80 pointer-events-none" />
+    <section id="brand-why" className="w-full" style={{ padding: '96px 0', background: '#0a0a0a' }}>
+      <div className="site-container">
 
-      <div className="container mx-auto relative z-10">
+        {/* Statement */}
         <motion.div
           ref={ref}
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
-          className="space-y-16" // Spacing between the two blocks
+          transition={{ duration: 0.7 }}
+          style={{ marginBottom: '72px' }}
         >
-          {/* Brand Promise Card – centered and highlighted */}
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-gradient-to-br from-accent/10 to-transparent p-10 rounded-3xl border border-accent/20 text-center">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-                Our <span className="text-accent">Brand Promise</span>
-              </h2>
-              <p className="text-xl text-gray-200 leading-relaxed">
-                At Spec360 Communication, we promise to deliver dependable tech and digital
-                solutions—crafted with care, driven by expertise, and designed to work in the real world.
-              </p>
-            </div>
+          <div className="flex items-center gap-3" style={{ marginBottom: '32px' }}>
+            <div className="w-8 h-px bg-accent" />
+            <span className="text-accent font-body text-[12px] font-medium tracking-[0.18em] uppercase">Our Promise</span>
           </div>
-
-          {/* Why Choose Us – grid of reason cards */}
-          <div>
-            <motion.h2
-              initial={{ opacity: 0, y: 30 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-3xl md:text-4xl font-bold text-white text-center mb-12"
-            >
-              Why Choose <span className="text-accent">Us</span>
-            </motion.h2>
-
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate={inView ? 'visible' : 'hidden'}
-              // Responsive grid with 2-1-2 layout on medium screens:
-              // - Mobile: 1 column
-              // - sm & md: 2 columns, with the third card spanning both columns
-              // - lg & xl: 3 columns then 5 columns, normal flow
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6"
-            >
-              {reasons.map((reason, index) => (
-                <motion.div
-                  key={index}
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.05 }} // Subtle hover effect
-                  // On sm and md, make the third card span full width (2 columns)
-                  // On lg, revert to normal column span
-                  className={`bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-white/10 hover:border-accent/50 text-center group ${
-                    index === 2 ? 'sm:col-span-2 lg:col-span-1' : ''
-                  }`}
-                >
-                  <div className="flex justify-center mb-4">
-                    <div className="p-3 bg-accent/20 rounded-full text-accent group-hover:scale-110 transition-transform">
-                      <reason.icon size={32} />
-                    </div>
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">{reason.title}</h3>
-                  <p className="text-gray-400 text-sm">{reason.desc}</p>
-                </motion.div>
-              ))}
-            </motion.div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-center" style={{ gap: '48px' }}>
+            <h2 className="font-display font-bold text-white leading-tight tracking-tight"
+              style={{ fontSize: 'clamp(36px, 5vw, 68px)' }}>
+              Dependable Tech.<br />
+              <span className="text-accent">Done Right.</span>
+            </h2>
+            <p className="font-body text-[#a1a1a6] leading-relaxed" style={{ fontSize: '18px' }}>
+              At Spec360, we deliver dependable tech and digital solutions — crafted with care, driven by expertise,
+              and designed to work in the real world.
+            </p>
           </div>
         </motion.div>
+
+        {/* Why Choose Us */}
+        <motion.h3
+          initial={{ opacity: 0, y: 16 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="font-display font-bold text-white"
+          style={{ fontSize: '22px', marginBottom: '28px' }}
+        >
+          Why Choose Us
+        </motion.h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5" style={{ gap: '16px' }}>
+          {reasons.map((r, i) => {
+            const Icon = r.icon;
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.45, delay: 0.3 + i * 0.07 }}
+                whileHover={{ y: -4 }}
+                className="group rounded-xl transition-all duration-300 hover:border-accent/30"
+                style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', padding: '28px 24px' }}
+              >
+                <div className="flex items-center justify-center rounded-xl text-accent mb-5 transition-all duration-300 group-hover:bg-accent group-hover:text-white"
+                  style={{ width: '44px', height: '44px', background: 'rgba(229,9,20,0.1)' }}>
+                  <Icon size={20} strokeWidth={1.5} />
+                </div>
+                <h4 className="font-display font-semibold text-white tracking-tight" style={{ fontSize: '15px', marginBottom: '8px' }}>{r.title}</h4>
+                <p className="font-body text-[#6e6e73]" style={{ fontSize: '13px', lineHeight: '1.65' }}>{r.desc}</p>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

@@ -1,152 +1,127 @@
-import { useState } from 'react';
+// src/pages/AdminAddProduct.jsx
+import { useState, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Upload, Check, ArrowLeft } from 'lucide-react';
 
 const AdminAddProduct = () => {
-  const [form, setForm] = useState({
-    name: '',
-    category: 'phone',
-    price: '',
-    description: '',
-    stock: 10,
-    imageFile: null,        // renamed for clarity (holds the File object)
-  });
-  const [message, setMessage] = useState('');
+  const [form, setForm] = useState({ name: '', category: 'phone', price: '', description: '', stock: 10, imageFile: null });
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem('adminAuth');
-    navigate('/');
-  }
+  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleFileChange = e => {
+    const file = e.target.files[0];
+    if (file) { setForm({ ...form, imageFile: file }); setPreview(URL.createObjectURL(file)); }
   };
 
-  const handleFileChange = (e) => {
-    setForm({ ...form, imageFile: e.target.files[0] });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const formData = new FormData();
-    formData.append('name', form.name);
-    formData.append('category', form.category);
-    formData.append('price', form.price);
-    formData.append('description', form.description);
-    formData.append('stock', form.stock);
-    formData.append('image', form.imageFile); // must match backend field name
-
+  const handleSubmit = async e => {
+    e.preventDefault(); setLoading(true);
+    const fd = new FormData();
+    Object.entries(form).forEach(([k, v]) => { if (k === 'imageFile') fd.append('image', v); else fd.append(k, v); });
     try {
-      await axios.post('http://localhost:5001/api/products', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setMessage('Product added successfully!');
-      
-      // ✅ Correct reset: use 'imageFile: null', not 'image: null'
-      setForm({
-        name: '',
-        category: 'phone',
-        price: '',
-        description: '',
-        stock: 10,
-        imageFile: null,
-      });
-      
-      // Clear file input visually
-      document.getElementById('image-input').value = '';
-      
-      // Optional: auto-hide message after 3 seconds
-      setTimeout(() => setMessage(''), 3000);
-    } catch (err) {
-      setMessage('Error adding product. Please try again.');
-      console.error('Upload error:', err.response?.data || err.message);
-    }
+      await axios.post(`${import.meta.env.VITE_API_URL}/products`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setMessage({ type: 'success', text: 'Product added successfully!' });
+      setForm({ name: '', category: 'phone', price: '', description: '', stock: 10, imageFile: null });
+      setPreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+    } catch { setMessage({ type: 'error', text: 'Error adding product. Please try again.' }); }
+    finally { setLoading(false); }
   };
 
   return (
-    <section className="py-12 px-6">
-      <div className="container mx-auto max-w-2xl">
-        <h1 className="text-3xl font-bold text-white mb-6">Add New Product</h1>
-        <button
-    onClick={() => navigate('/admin/products')}
-    className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg"
-  >
-    Manage Products
-  </button>
-        <form onSubmit={handleSubmit} className="bg-white/5 p-6 rounded-xl space-y-4">
-          <input
-            type="text"
-            name="name"
-            placeholder="Product Name"
-            value={form.name}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 bg-dark border border-white/10 rounded-lg text-white"
-          />
-          <select
-            name="category"
-            value={form.category}
-            onChange={handleChange}
-            className="w-full px-4 py-2 bg-dark border border-white/10 rounded-lg text-white"
-          >
-            <option value="phone">Phone</option>
-            <option value="accessory">Accessory</option>
-          </select>
-          <input
-            type="number"
-            name="price"
-            placeholder="Price (₦)"
-            value={form.price}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 bg-dark border border-white/10 rounded-lg text-white"
-          />
-          <textarea
-            name="description"
-            placeholder="Description"
-            value={form.description}
-            onChange={handleChange}
-            required
-            rows="3"
-            className="w-full px-4 py-2 bg-dark border border-white/10 rounded-lg text-white"
-          />
-          <input
-            type="number"
-            name="stock"
-            placeholder="Stock"
-            value={form.stock}
-            onChange={handleChange}
-            className="w-full px-4 py-2 bg-dark border border-white/10 rounded-lg text-white"
-          />
-          <div>
-            <label className="block text-gray-300 mb-2">Product Image</label>
-            <input
-              id="image-input"
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              required
-              className="w-full text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-red-700"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-accent hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition"
-          >
-            Add Product
-          </button>
-          {message && <p className="text-center text-green-400">{message}</p>}
-        </form>
-        <button
-          onClick={handleLogout}
-          className="mt-4 text-gray-400 hover:text-accent text-sm"
-        >
-          Logout
-        </button>
-      </div>
+    <section className="w-full bg-[#080808]" style={{ minHeight: '100vh', paddingTop: '96px', paddingBottom: '96px' }}>
+      <div className="site-container" style={{ maxWidth: '680px' }}>
 
+        <div style={{ marginBottom: '36px' }}>
+          <button onClick={() => navigate('/admin/products')}
+            className="inline-flex items-center gap-2 font-body text-[#6e6e73] hover:text-white transition-colors"
+            style={{ fontSize: '14px', marginBottom: '24px' }}>
+            <ArrowLeft size={15} strokeWidth={1.5} /> Back to Products
+          </button>
+          <h1 className="font-display font-bold text-white tracking-tight" style={{ fontSize: '34px' }}>Add Product</h1>
+          <p className="font-body text-[#6e6e73]" style={{ fontSize: '14px', marginTop: '6px' }}>Fill in the details to add a new product to your store.</p>
+        </div>
+
+        <motion.form
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+          onSubmit={handleSubmit}
+          style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '36px', display: 'flex', flexDirection: 'column', gap: '24px' }}
+        >
+          {/* Image upload */}
+          <div>
+            <label className="font-body text-[#6e6e73] uppercase tracking-wider block" style={{ fontSize: '11px', marginBottom: '10px' }}>Product Image</label>
+            <div onClick={() => fileInputRef.current?.click()}
+              className="relative cursor-pointer overflow-hidden transition-all duration-300"
+              style={{ border: `2px dashed ${preview ? 'rgba(229,9,20,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '14px' }}>
+              {preview
+                ? <img src={preview} alt="Preview" className="w-full object-cover" style={{ height: '200px' }} />
+                : <div className="flex flex-col items-center justify-center gap-3" style={{ padding: '48px 0' }}>
+                    <Upload size={24} className="text-[#3a3a3a]" strokeWidth={1.5} />
+                    <span className="font-body text-[#6e6e73]" style={{ fontSize: '14px' }}>Click to upload image</span>
+                  </div>
+              }
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} required className="hidden" />
+            </div>
+          </div>
+
+          {/* Name */}
+          <div>
+            <label className="font-body text-[#6e6e73] uppercase tracking-wider block" style={{ fontSize: '11px', marginBottom: '8px' }}>Product Name</label>
+            <input type="text" name="name" placeholder="iPhone 15 Pro Max" value={form.name} onChange={handleChange} required className="input-field" />
+          </div>
+
+          {/* Category + Price */}
+          <div className="grid grid-cols-2" style={{ gap: '16px' }}>
+            <div>
+              <label className="font-body text-[#6e6e73] uppercase tracking-wider block" style={{ fontSize: '11px', marginBottom: '8px' }}>Category</label>
+              <select name="category" value={form.category} onChange={handleChange} className="input-field">
+                <option value="phone">Phone</option>
+                <option value="accessory">Accessory</option>
+              </select>
+            </div>
+            <div>
+              <label className="font-body text-[#6e6e73] uppercase tracking-wider block" style={{ fontSize: '11px', marginBottom: '8px' }}>Price (₦)</label>
+              <input type="number" name="price" placeholder="250000" value={form.price} onChange={handleChange} required className="input-field" />
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="font-body text-[#6e6e73] uppercase tracking-wider block" style={{ fontSize: '11px', marginBottom: '8px' }}>Description</label>
+            <textarea name="description" placeholder="Product details..." value={form.description}
+              onChange={handleChange} required rows="4" className="input-field" style={{ resize: 'none' }} />
+          </div>
+
+          {/* Stock */}
+          <div>
+            <label className="font-body text-[#6e6e73] uppercase tracking-wider block" style={{ fontSize: '11px', marginBottom: '8px' }}>Stock Quantity</label>
+            <input type="number" name="stock" value={form.stock} onChange={handleChange} className="input-field" />
+          </div>
+
+          {/* Submit */}
+          <div style={{ paddingTop: '8px' }}>
+            <button type="submit" disabled={loading}
+              className="btn-primary w-full justify-center disabled:opacity-50"
+              style={{ padding: '16px 32px', fontSize: '16px' }}>
+              {loading ? 'Adding Product...' : <><Check size={16} /> Add Product</>}
+            </button>
+            {message.text && (
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className={`font-body text-center ${message.type === 'success' ? 'text-green-400' : 'text-red-400'}`}
+                style={{ fontSize: '14px', marginTop: '16px' }}>
+                {message.text}
+              </motion.p>
+            )}
+          </div>
+        </motion.form>
+      </div>
     </section>
   );
 };

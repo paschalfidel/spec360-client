@@ -1,4 +1,3 @@
-// client/src/context/AuthContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
@@ -17,18 +16,12 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        // Set the default authorization header
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-        // Verify token with backend
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/verify`);
-        
-        // If verification returns user data, set it
         if (response.data.user) {
           setUser(response.data.user);
         }
       } catch {
-        // Token invalid or expired – clear storage and state
         localStorage.removeItem('token');
         delete axios.defaults.headers.common['Authorization'];
         setToken(null);
@@ -39,23 +32,23 @@ export const AuthProvider = ({ children }) => {
     };
 
     verifyToken();
-  }, [token]); // Re-run only if token changes
+  }, [token]);
 
   const login = async (email, password) => {
     try {
       const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, { email, password });
       const { token: newToken, user: userData } = res.data;
-      
+
       localStorage.setItem('token', newToken);
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
       setToken(newToken);
       setUser(userData);
-      
+
       return { success: true };
     } catch (err) {
-      return { 
-        success: false, 
-        message: err.response?.data?.message || 'Login failed' 
+      return {
+        success: false,
+        message: err.response?.data?.message || 'Login failed',
       };
     }
   };
@@ -72,5 +65,4 @@ export const AuthProvider = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);

@@ -1,141 +1,109 @@
-import { Link as ScrollLink } from 'react-scroll';
+// src/components/Footer.jsx
 import { Link } from 'react-router-dom';
 import { Instagram, Twitter, Facebook } from 'lucide-react';
 
+const scrollTo = id => {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+};
+
 const Footer = () => {
+  const year = new Date().getFullYear();
+  const quickLinks = [
+    { label: 'Home', hash: 'hero' },
+    { label: 'About', hash: 'about' },
+    { label: 'Services', hash: 'services' },
+    { label: 'Our Identity', hash: 'vision-mission-values' },
+    { label: 'Contact', hash: 'contact' },
+  ];
+  const serviceLinks = [
+    { label: 'Phones & Accessories', to: '/services/phones-accessories' },
+    { label: 'Repairs', to: '/services/repairs' },
+    { label: 'Web Development', to: '/services/web-development' },
+    { label: 'POS Services', to: '/services/pos' },
+    { label: 'Connectivity', to: '/services/connectivity' },
+    { label: 'Logistics', to: '/services/logistics' },
+  ];
+  const socials = [
+    { icon: Instagram, href: 'https://www.instagram.com/gadgetsbyspec360/', label: 'Instagram' },
+    { icon: Twitter, href: 'https://x.com/paschalomens', label: 'X' },
+    { icon: Facebook, href: 'https://web.facebook.com/spec360com', label: 'Facebook' },
+  ];
+
   return (
-    <footer
-      className="relative border-t border-white/10 bg-cover bg-center"
-      style={{ backgroundImage: "url('/images/footer.png')" }}
-    >
-      {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+    <footer style={{ background: '#080808', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="site-container" style={{ paddingTop: '64px', paddingBottom: '64px' }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4" style={{ gap: '48px' }}>
 
-      <div className="container mx-auto px-6 py-16 relative z-10">
-        {/* Responsive grid: 1 col mobile, 2 cols medium, 3 cols large */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-          {/* Column 1: Brand + Connect (on medium) */}
-          <div className="flex flex-col space-y-8 text-center md:text-left">
-            {/* Brand */}
-            <div>
-              <h3 className="text-3xl font-bold text-white tracking-tight">
-                Spec360<span className="text-accent">Communication</span>
-              </h3>
-              <p className="mt-4 text-gray-400 max-w-sm mx-auto md:mx-0">
-                Smart Tech. Smart Solutions. Done Right.
-              </p>
+          {/* Brand */}
+          <div>
+            <div className="font-display font-bold text-white" style={{ fontSize: '20px', marginBottom: '12px' }}>
+              Spec<span className="text-accent">360</span>
             </div>
-
-            {/* Connect - visible only on medium screens (hidden on large) */}
-            <div className="md:block lg:hidden">
-              <h4 className="text-white font-semibold text-lg mb-4">Connect</h4>
-              <div className="flex justify-center md:justify-start gap-6 mb-6">
-                <a
-                  href="https://www.instagram.com/gadgetsbyspec360/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-full bg-white/5 hover:bg-accent/20 transition-all duration-300 text-gray-400 hover:text-accent"
-                >
-                  <Instagram size={20} />
-                </a>
-                <a
-                  href="https://x.com/paschalomens"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-full bg-white/5 hover:bg-accent/20 transition-all duration-300 text-gray-400 hover:text-accent"
-                >
-                  <Twitter size={20} />
-                </a>
-                <a
-                  href="https://web.facebook.com/spec360com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-full bg-white/5 hover:bg-accent/20 transition-all duration-300 text-gray-400 hover:text-accent"
-                >
-                  <Facebook size={20} />
-                </a>
-              </div>
-              <p className="text-gray-500 text-sm">
-                © {new Date().getFullYear()} Spec360 Communication. All rights reserved.
-              </p>
-              <p className="text-gray-600 text-xs mt-4">
-                <Link to="/admin/login" className="hover:text-accent opacity-50 hover:opacity-100">
-                  Admin
-                </Link>
-              </p>
+            <p className="font-body text-[#6e6e73] leading-relaxed" style={{ fontSize: '13px', maxWidth: '200px', marginBottom: '24px' }}>
+              Smart Tech. Smart Solutions. Done Right.
+            </p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              {socials.map((s, i) => {
+                const Icon = s.icon;
+                return (
+                  <a key={i} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label}
+                    className="flex items-center justify-center text-[#6e6e73] hover:text-white transition-all duration-300 hover:border-white/20"
+                    style={{ width: '36px', height: '36px', background: '#141414', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '8px' }}>
+                    <Icon size={14} strokeWidth={1.5} />
+                  </a>
+                );
+              })}
             </div>
           </div>
 
-          {/* Column 2: Quick Links (centered) */}
-          <div className="flex flex-col items-center">
-            <h4 className="text-white font-semibold text-lg mb-4">Quick Links</h4>
-            <ul className="space-y-3 text-gray-400 text-center">
-              <li>
-                <ScrollLink to="hero" smooth duration={500} className="hover:text-accent transition-colors cursor-pointer">
-                  Home
-                </ScrollLink>
-              </li>
-              <li>
-                <ScrollLink to="about" smooth duration={500} className="hover:text-accent transition-colors cursor-pointer">
-                  About
-                </ScrollLink>
-              </li>
-              <li>
-                <ScrollLink to="services" smooth duration={500} className="hover:text-accent transition-colors cursor-pointer">
-                  Services
-                </ScrollLink>
-              </li>
-              <li>
-                <ScrollLink to="vision-mission-values" smooth duration={500} className="hover:text-accent transition-colors cursor-pointer">
-                  Our Identity
-                </ScrollLink>
-              </li>
-              <li>
-                <ScrollLink to="contact" smooth duration={500} className="hover:text-accent transition-colors cursor-pointer">
-                  Contact
-                </ScrollLink>
-              </li>
+          {/* Navigate */}
+          <div>
+            <p className="font-display font-semibold text-white uppercase tracking-wider" style={{ fontSize: '12px', marginBottom: '20px' }}>Navigate</p>
+            <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {quickLinks.map(link => (
+                <li key={link.label}>
+                  <button onClick={() => scrollTo(link.hash)}
+                    className="font-body text-[#6e6e73] hover:text-white transition-colors duration-200 text-left"
+                    style={{ fontSize: '14px' }}>
+                    {link.label}
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Column 3: Connect (visible only on large screens) */}
-          <div className="hidden lg:block text-center lg:text-right">
-            <h4 className="text-white font-semibold text-lg mb-4">Connect</h4>
-            <div className="flex justify-center lg:justify-end gap-6 mb-6">
-              <a
-                href="https://www.instagram.com/gadgetsbyspec360/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 rounded-full bg-white/5 hover:bg-accent/20 transition-all duration-300 text-gray-400 hover:text-accent"
-              >
-                <Instagram size={20} />
-              </a>
-              <a
-                href="https://x.com/paschalomens"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 rounded-full bg-white/5 hover:bg-accent/20 transition-all duration-300 text-gray-400 hover:text-accent"
-              >
-                <Twitter size={20} />
-              </a>
-              <a
-                href="https://web.facebook.com/spec360com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 rounded-full bg-white/5 hover:bg-accent/20 transition-all duration-300 text-gray-400 hover:text-accent"
-              >
-                <Facebook size={20} />
-              </a>
-            </div>
-            <p className="text-gray-500 text-sm">
-              © {new Date().getFullYear()} Spec360 Communication. All rights reserved.
-            </p>
-            <p className="text-gray-600 text-xs mt-4">
-              <Link to="/admin/login" className="hover:text-accent opacity-50 hover:opacity-100">
-                Admin
-              </Link>
-            </p>
+          {/* Services */}
+          <div>
+            <p className="font-display font-semibold text-white uppercase tracking-wider" style={{ fontSize: '12px', marginBottom: '20px' }}>Services</p>
+            <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {serviceLinks.map(link => (
+                <li key={link.label}>
+                  <Link to={link.to} className="font-body text-[#6e6e73] hover:text-white transition-colors duration-200" style={{ fontSize: '14px' }}>
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
+
+          {/* Contact */}
+          <div>
+            <p className="font-display font-semibold text-white uppercase tracking-wider" style={{ fontSize: '12px', marginBottom: '20px' }}>Get In Touch</p>
+            <div className="font-body text-[#6e6e73]" style={{ fontSize: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <p style={{ lineHeight: '1.6' }}>70 Njemanze Street,<br />Owerri Municipal, Imo</p>
+              <a href="tel:08182799154" className="hover:text-white transition-colors">0818 279 9154</a>
+              <a href="mailto:info@spec360.com.ng" className="hover:text-white transition-colors">info@spec360.com.ng</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom bar */}
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <div className="site-container" style={{ paddingTop: '18px', paddingBottom: '18px', display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <p className="font-body text-[#3a3a3a]" style={{ fontSize: '12px' }}>© {year} Spec360 Communication. All rights reserved.</p>
+          <Link to="/admin/login" className="font-body text-[#2a2a2a] hover:text-[#6e6e73] transition-colors" style={{ fontSize: '11px' }}>Admin</Link>
         </div>
       </div>
     </footer>

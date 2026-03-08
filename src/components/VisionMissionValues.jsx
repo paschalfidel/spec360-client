@@ -1,130 +1,127 @@
-// VisionMissionValues.jsx
-// Combines Vision, Mission, and Core Values into one cohesive section.
-// Core values display as 2-1-2 on tablets (medium screens) for better balance.
-// Fully commented and ready for deployment.
-
-// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { Sparkles, Target, Heart, Rocket, Shield } from 'lucide-react';
+import ImageWithPlaceholder from './ImageWithPlaceholder';
+
+const values = [
+  { icon: Sparkles, title: 'Spectacular Quality', desc: 'Excellence in every device, repair, and line of code.' },
+  { icon: Target, title: 'Specific Solutions', desc: 'Tailored, need-based services — never generic.' },
+  { icon: Heart, title: 'Special Service', desc: 'People-first, trust-driven at every step.' },
+  { icon: Rocket, title: 'Innovation', desc: 'Continuous improvement through learning.' },
+  { icon: Shield, title: 'Integrity', desc: 'Honest advice and fully reliable delivery.' },
+];
 
 const VisionMissionValues = () => {
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
-
-  const values = [
-    { icon: Sparkles, title: 'Spectacular Quality', desc: 'Excellence in devices, repairs, and code' },
-    { icon: Target, title: 'Specific Solutions', desc: 'Tailored, need-based services' },
-    { icon: Heart, title: 'Special Service', desc: 'People-first, trust-driven approach' },
-    { icon: Rocket, title: 'Innovation & Growth', desc: 'Continuous improvement and learning' },
-    { icon: Shield, title: 'Integrity & Transparency', desc: 'Honest advice and reliable solutions' },
-  ];
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, duration: 0.5 },
-  };
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.06 });
 
   return (
-    <section
-      id="vision-mission-values"
-      className="relative min-h-screen py-20 px-6 bg-cover bg-center flex items-center"
-      style={{ backgroundImage: "url('/images/vision-mission.png')" }}
-    >
-      {/* Dark overlay – matches Services section */}
-      <div className="absolute inset-0 bg-black/75 pointer-events-none" />
+    <section id="vision-mission-values" className="w-full bg-[#080808]" style={{ padding: '96px 0' }}>
+      <div className="site-container">
 
-      <div className="container mx-auto relative z-10">
         <motion.div
           ref={ref}
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
-          className="space-y-16"
+          transition={{ duration: 0.6 }}
+          className="flex items-center gap-3"
+          style={{ marginBottom: '48px' }}
         >
-          {/* Vision & Mission Cards (unchanged) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Vision Card */}
-            <div
-              className="relative bg-cover bg-center rounded-2xl overflow-hidden"
-              style={{ backgroundImage: "url('/images/core-values.png')" }}
-            >
-              <div className="absolute inset-0 bg-black/60" />
-              <div className="relative z-10 p-8 backdrop-blur-sm border border-white/10">
-                <h3 className="text-3xl md:text-4xl font-bold text-accent mb-4">Our Vision</h3>
-                <p className="text-gray-100 text-lg md:text-xl leading-relaxed">
-                  To become a leading 360° tech and digital solutions brand in Nigeria and beyond,
-                  known for delivering spectacular quality, specific solutions, and special service.
-                </p>
-              </div>
-            </div>
-
-            {/* Mission Card */}
-            <div
-              className="relative bg-cover bg-center rounded-2xl overflow-hidden"
-              style={{ backgroundImage: "url('/images/core-values.png')" }}
-            >
-              <div className="absolute inset-0 bg-black/60" />
-              <div className="relative z-10 p-8 backdrop-blur-sm border border-white/10">
-                <h3 className="text-3xl md:text-4xl font-bold text-accent mb-4">Our Mission</h3>
-                <ul className="text-gray-100 text-lg md:text-xl leading-relaxed space-y-3 list-disc list-inside">
-                  <li>Provide reliable smartphones, accessories, and professional repair services</li>
-                  <li>Design modern, scalable web solutions for individuals and businesses</li>
-                  <li>Combine technical expertise with customer-centric thinking</li>
-                  <li>Continuously evolve through innovation and execution</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Core Values Section */}
-          <div>
-            <motion.h2
-              initial={{ opacity: 0, y: 30 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-3xl md:text-4xl font-bold text-white text-center mb-12"
-            >
-              Core <span className="text-accent">Values</span>
-            </motion.h2>
-
-            {/* Responsive grid with 2-1-2 layout on medium screens */}
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate={inView ? 'visible' : 'hidden'}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6"
-            >
-              {values.map((val, idx) => (
-                <motion.div
-                  key={idx}
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.05 }}
-                  // On sm & md screens (2 columns), the third item spans both columns,
-                  // creating a centered row. On larger screens it reverts to normal.
-                  className={`bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-white/10 hover:border-accent/50 text-center group ${
-                    idx === 2 ? 'sm:col-span-2 lg:col-span-1' : ''
-                  }`}
-                >
-                  <div className="flex justify-center mb-4">
-                    <div className="p-3 bg-accent/20 rounded-full text-accent group-hover:scale-110 transition-transform">
-                      <val.icon size={32} />
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-bold text-white mb-2">{val.title}</h3>
-                  <p className="text-gray-400 text-sm">{val.desc}</p>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
+          <div className="w-8 h-px bg-accent" />
+          <span className="text-accent font-body text-[12px] font-medium tracking-[0.18em] uppercase">Our Identity</span>
         </motion.div>
+
+        {/* Vision + Mission */}
+        <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: '20px', marginBottom: '72px' }}>
+          {[
+            {
+              src: '/images/spec360-vision.PNG',
+              title: 'Our Vision',
+              content: 'To become a leading 360° tech and digital solutions brand in Nigeria and beyond — known for delivering spectacular quality, specific solutions, and special service.',
+              isList: false,
+            },
+            {
+              src: '/images/spec360-mission.png',
+              title: 'Our Mission',
+              isList: true,
+              items: [
+                'Reliable smartphones, accessories, and professional repairs',
+                'Modern, scalable web solutions for individuals and businesses',
+                'Technical expertise combined with customer-centric thinking',
+                'Continuous evolution through innovation and execution',
+              ],
+            },
+          ].map((card, i) => (
+            <motion.div
+              key={card.title}
+              initial={{ opacity: 0, y: 24 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: 0.1 + i * 0.12 }}
+              className="relative rounded-2xl overflow-hidden"
+              style={{ minHeight: '320px', background: '#111' }}
+            >
+              <ImageWithPlaceholder
+                src={card.src} alt={card.title}
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ opacity: 0.2 }}
+                placeholderText=""
+              />
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(17,17,17,0.95) 50%, rgba(17,17,17,0.6) 100%)' }} />
+              <div className="relative z-10 flex flex-col justify-end" style={{ padding: '36px', height: '100%' }}>
+                <div className="w-8 h-px bg-accent" style={{ marginBottom: '16px' }} />
+                <h3 className="font-display font-bold text-white tracking-tight" style={{ fontSize: '26px', marginBottom: '16px' }}>{card.title}</h3>
+                {card.isList ? (
+                  <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {card.items.map((item, j) => (
+                      <li key={j} className="font-body text-[#a1a1a6] flex items-start gap-2.5" style={{ fontSize: '14px', lineHeight: '1.6' }}>
+                        <span className="text-accent flex-shrink-0 mt-0.5">—</span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="font-body text-[#a1a1a6]" style={{ fontSize: '15px', lineHeight: '1.75' }}>{card.content}</p>
+                )}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Core Values */}
+        <motion.h2
+          initial={{ opacity: 0, y: 16 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="font-display font-bold text-white text-center tracking-tight"
+          style={{ fontSize: 'clamp(26px, 3vw, 42px)', marginBottom: '36px' }}
+        >
+          Core <span className="text-accent">Values</span>
+        </motion.h2>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5" style={{ gap: '16px' }}>
+          {values.map((val, i) => {
+            const Icon = val.icon;
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 16 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.45, delay: 0.4 + i * 0.07 }}
+                whileHover={{ y: -4 }}
+                className="rounded-xl text-center transition-all duration-300 hover:border-white/20"
+                style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', padding: '28px 20px' }}
+              >
+                <div className="flex justify-center" style={{ marginBottom: '16px' }}>
+                  <div className="flex items-center justify-center rounded-xl text-accent"
+                    style={{ width: '44px', height: '44px', background: 'rgba(229,9,20,0.1)' }}>
+                    <Icon size={20} strokeWidth={1.5} />
+                  </div>
+                </div>
+                <h3 className="font-display font-semibold text-white tracking-tight" style={{ fontSize: '13px', marginBottom: '8px' }}>{val.title}</h3>
+                <p className="font-body text-[#6e6e73]" style={{ fontSize: '12px', lineHeight: '1.6' }}>{val.desc}</p>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
