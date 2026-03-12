@@ -1,129 +1,144 @@
 // src/components/FeaturedProducts.jsx
-// Shows sample products on homepage. When your backend has real products,
-// this fetches from /api/products. Until then, uses SAMPLE_PRODUCTS.
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProductCard from './ProductCard';
 import { fetchProducts } from '../services/api';
 
-// ── SAMPLE PRODUCTS ─────────────────────────────────────────────────────────
-// Replace imageUrl values with your actual Cloudinary URLs after uploading
-// products in the admin panel. Categories: phone | accessory | part
+const MAX_FEATURED = 10;
+
+// Fisher-Yates shuffle — picks random products every page load
+const shuffle = (arr) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
 const SAMPLE_PRODUCTS = [
-  {
-    _id: 'sample-1', name: 'iPhone 14 Clear Case', category: 'accessory', price: 8500,
-    description: 'Crystal-clear slim case. MIL-grade drop protection, wireless charging compatible.',
-    imageUrl: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=500&q=80',
-    stock: 24,
-  },
-  {
-    _id: 'sample-2', name: 'Samsung A54 Screen (OEM)', category: 'part', price: 18000,
-    description: 'OEM-grade AMOLED screen. Includes tools & adhesive. Same-day fitting available.',
-    imageUrl: 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=500&q=80',
-    stock: 8,
-  },
-  {
-    _id: 'sample-3', name: '20W Fast Charger + Cable', category: 'accessory', price: 4500,
-    description: 'Universal USB-C fast charger. Compatible with iPhone 15, Samsung Galaxy, and more.',
-    imageUrl: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=500&q=80',
-    stock: 50,
-  },
-  {
-    _id: 'sample-4', name: 'OEM Battery Replacement', category: 'part', price: 15000,
-    description: 'Genuine OEM battery. 90-day warranty. Walk in, walk out same day.',
-    imageUrl: 'https://images.unsplash.com/photo-1605464315542-bda3e2f4e605?w=500&q=80',
-    stock: 3,
-  },
-  {
-    _id: 'sample-5', name: 'Tempered Glass Screen Guard', category: 'accessory', price: 3000,
-    description: '9H hardness, anti-fingerprint coating. Available for all iPhone & Samsung models.',
-    imageUrl: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=500&q=80',
-    stock: 100,
-  },
+  { _id: 's1', name: 'iPhone 14 Clear Case',        category: 'accessory', price: 8500,  stock: 24,  imageUrl: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=400&q=75', description: 'Crystal-clear slim case. MIL-grade drop protection.' },
+  { _id: 's2', name: 'Samsung A54 Screen (OEM)',     category: 'part',      price: 18000, stock: 8,   imageUrl: 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=400&q=75', description: 'OEM AMOLED screen. Includes tools & adhesive.' },
+  { _id: 's3', name: '20W Fast Charger + Cable',     category: 'accessory', price: 4500,  stock: 50,  imageUrl: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=400&q=75', description: 'Universal USB-C fast charger.' },
+  { _id: 's4', name: 'OEM Battery Replacement',      category: 'part',      price: 15000, stock: 3,   imageUrl: 'https://images.unsplash.com/photo-1605464315542-bda3e2f4e605?w=400&q=75', description: 'Genuine OEM battery. 90-day warranty.' },
+  { _id: 's5', name: 'Tempered Glass Guard',         category: 'accessory', price: 3000,  stock: 100, imageUrl: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&q=75', description: '9H hardness, anti-fingerprint coating.' },
+  { _id: 's6', name: 'iPhone 13 Charging Port',      category: 'part',      price: 12000, stock: 6,   imageUrl: 'https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=400&q=75', description: 'OEM charging port with flex cable.' },
+  { _id: 's7', name: 'Samsung Back Glass',           category: 'part',      price: 9500,  stock: 12,  imageUrl: 'https://images.unsplash.com/photo-1546027658-7aa750153465?w=400&q=75', description: 'OEM back glass with adhesive pre-applied.' },
+  { _id: 's8', name: 'Wireless Charging Pad',        category: 'accessory', price: 7500,  stock: 30,  imageUrl: 'https://images.unsplash.com/photo-1608751819407-8c8672b65b37?w=400&q=75', description: '15W fast wireless charger for all Qi devices.' },
+  { _id: 's9', name: 'Phone Stand & Holder',         category: 'accessory', price: 2500,  stock: 60,  imageUrl: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400&q=75', description: 'Adjustable desktop phone stand.' },
+  { _id: 's10', name: 'Tecno Camon 20 Pro',          category: 'phone',     price: 285000, stock: 5, imageUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=75', description: '108MP camera, 5000mAh battery.' },
 ];
 
+// Grid CSS: 2 cols mobile → 3 cols at 480px → 4 cols at 768px → 5 cols at 1100px
+const GRID_STYLE = `
+  .fp-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  @media (min-width: 480px) {
+    .fp-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  }
+  @media (min-width: 768px) {
+    .fp-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  }
+  @media (min-width: 1100px) {
+    .fp-grid { grid-template-columns: repeat(5, 1fr); gap: 18px; }
+  }
+`;
+
 const FeaturedProducts = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.05 });
+  const [allProducts, setAllProducts] = useState([]);
+  const [loading,     setLoading]     = useState(true);
 
   useEffect(() => {
     fetchProducts()
-      .then(res => {
-        // Use real products if they exist, otherwise show samples
-        const real = res.data;
-        setProducts(real.length > 0 ? real.slice(0, 5) : SAMPLE_PRODUCTS);
-      })
-      .catch(() => setProducts(SAMPLE_PRODUCTS))
+      .then(res => setAllProducts(res.data?.length > 0 ? res.data : SAMPLE_PRODUCTS))
+      .catch(()  => setAllProducts(SAMPLE_PRODUCTS))
       .finally(() => setLoading(false));
   }, []);
 
+  // Pick up to MAX_FEATURED random products — recomputed once when allProducts loads
+  const featured = useMemo(
+    () => shuffle(allProducts).slice(0, MAX_FEATURED),
+    [allProducts]
+  );
+
+  const skeletonCount = Math.min(MAX_FEATURED, 10);
+
   return (
     <section id="featured-products" style={{ background: '#080808', padding: '80px 0' }}>
+      <style>{GRID_STYLE}</style>
       <div className="site-container">
 
-        <motion.div ref={ref} initial={{ opacity: 0, y: 24 }} animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }} style={{ marginBottom: '40px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+        {/* Header */}
+        <div style={{ marginBottom: '36px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-              <div style={{ width: '32px', height: '1px', background: '#E50914' }} />
-              <span style={{ fontFamily: 'DM Sans, sans-serif', color: '#E50914', fontSize: '12px', fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+              <div style={{ width: '28px', height: '1px', background: '#E50914' }} />
+              <span style={{ fontFamily: 'DM Sans, sans-serif', color: '#E50914', fontSize: '11px', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
                 Shop Now
               </span>
             </div>
-            <h2 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, color: 'white', fontSize: 'clamp(28px, 4vw, 52px)', letterSpacing: '-0.03em', margin: 0 }}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, color: 'white', fontSize: 'clamp(24px, 4vw, 48px)', letterSpacing: '-0.03em', margin: 0 }}>
               Fix or Upgrade Today
             </h2>
-            <p style={{ fontFamily: 'DM Sans, sans-serif', color: '#6e6e73', fontSize: '16px', marginTop: '10px' }}>
-              Genuine parts & accessories — from <span style={{ color: '#22c55e', fontWeight: 700 }}>₦3,000</span>
+            <p style={{ fontFamily: 'DM Sans, sans-serif', color: '#6e6e73', fontSize: '15px', marginTop: '8px', marginBottom: 0 }}>
+              Genuine parts & accessories — from{' '}
+              <span style={{ color: '#22c55e', fontWeight: 700 }}>₦3,000</span>
             </p>
           </div>
-          <Link to="/services/phones-accessories"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              fontFamily: 'Syne, sans-serif', fontWeight: 600, fontSize: '14px',
-              color: '#a1a1a6', textDecoration: 'none', transition: 'color 0.2s'
-            }}>
-            View all <ArrowRight size={15} />
-          </Link>
-        </motion.div>
 
+          <Link
+            to="/services/phones-accessories"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '13px', color: '#a1a1a6', textDecoration: 'none', whiteSpace: 'nowrap', transition: 'color 0.2s' }}
+            onMouseEnter={e => e.currentTarget.style.color = 'white'}
+            onMouseLeave={e => e.currentTarget.style.color = '#a1a1a6'}
+          >
+            View all <ArrowRight size={14} />
+          </Link>
+        </div>
+
+        {/* Grid */}
         {loading ? (
-          <>
-            <style>{`.fp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}@media(min-width:480px){.fp-grid{grid-template-columns:repeat(3,1fr)}}@media(min-width:768px){.fp-grid{grid-template-columns:repeat(5,1fr)}}`}</style>
-            <div className="fp-grid">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="skeleton" style={{ borderRadius: '20px', aspectRatio: '0.85' }} />
-              ))}
-            </div>
-          </>
+          <div className="fp-grid">
+            {[...Array(skeletonCount)].map((_, i) => (
+              <div key={i} className="skeleton" style={{ aspectRatio: '0.82', borderRadius: '16px' }} />
+            ))}
+          </div>
+        ) : featured.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px 0' }}>
+            <ShoppingBag size={40} color="#3a3a3a" strokeWidth={1.5} style={{ marginBottom: '16px' }} />
+            <p style={{ fontFamily: 'DM Sans, sans-serif', color: '#6e6e73', fontSize: '15px' }}>No products yet.</p>
+            <p style={{ fontFamily: 'DM Sans, sans-serif', color: '#3a3a3a', fontSize: '13px', marginTop: '6px' }}>Add products in the admin panel to see them here.</p>
+          </div>
         ) : (
-          <>
-            <style>{`.fp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}@media(min-width:480px){.fp-grid{grid-template-columns:repeat(3,1fr)}}@media(min-width:768px){.fp-grid{grid-template-columns:repeat(5,1fr)}}`}</style>
-            <div className="fp-grid">
-              {products.map((product, i) => (
-                <motion.div
-                  key={product._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={inView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ delay: i * 0.07, duration: 0.5 }}
-                >
-                  <ProductCard product={product} badge={i === 0 ? 'New' : undefined} />
-                </motion.div>
-              ))}
-            </div>
-          </>
+          <div className="fp-grid">
+            {featured.map((product, i) => (
+              <motion.div
+                key={product._id}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ delay: Math.min(i, 4) * 0.06, duration: 0.45 }}
+              >
+                <ProductCard product={product} badge={i === 0 ? 'Featured' : undefined} />
+              </motion.div>
+            ))}
+          </div>
         )}
 
-        <style>{`
-          @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-          }
-        `}</style>
+        {/* Footer CTA */}
+        {!loading && allProducts.length > MAX_FEATURED && (
+          <div style={{ textAlign: 'center', marginTop: '40px' }}>
+            <Link to="/services/phones-accessories" className="btn-secondary" style={{ fontSize: '14px', padding: '12px 28px' }}>
+              See all {allProducts.length} products <ArrowRight size={14} />
+            </Link>
+          </div>
+        )}
+
       </div>
     </section>
   );

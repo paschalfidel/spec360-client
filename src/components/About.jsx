@@ -37,7 +37,7 @@ const About = () => {
               animate={inView ? { opacity: 1, scale: 1 } : {}}
               transition={{ delay: 0.45, duration: 0.5 }}
               className="absolute bg-accent text-white rounded-2xl shadow-xl shadow-accent/20"
-              style={{ bottom: '-28px', right: '-20px', padding: '24px 28px' }}
+              style={{ bottom: '-28px', right: '-10px', padding: '20px 20px' }}
             >
               <div className="font-display font-bold text-3xl leading-none">360°</div>
               <div className="font-body text-white/80 text-sm mt-1.5">Full Coverage</div>

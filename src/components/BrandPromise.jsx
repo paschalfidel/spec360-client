@@ -1,7 +1,7 @@
 // src/components/BrandPromise.jsx
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { Clock, Shield, DollarSign, Briefcase, Users } from 'lucide-react';
+import { Clock, Shield, DollarSign, Briefcase, Users, Truck } from 'lucide-react';
 
 const reasons = [
   { icon: Clock, title: 'Fast Service', desc: 'Quick turnaround on repairs and support requests.' },
@@ -9,6 +9,7 @@ const reasons = [
   { icon: DollarSign, title: 'Affordable Rates', desc: 'Competitive pricing with zero hidden costs.' },
   { icon: Briefcase, title: 'Business Solutions', desc: 'Tailored IT and POS services for any scale.' },
   { icon: Users, title: 'Personal Consultation', desc: 'Expert one-on-one advice to meet your needs.' },
+  { icon: Truck, title: 'Nationwide Delivery',       desc: 'We ship across Nigeria — same-day in Lagos & Owerri, next-day nationwide.' },
 ];
 
 const BrandPromise = () => {
@@ -54,7 +55,7 @@ const BrandPromise = () => {
           Why Choose Us
         </motion.h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5" style={{ gap: '16px' }}>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: '16px' }}>
           {reasons.map((r, i) => {
             const Icon = r.icon;
             return (

@@ -1,203 +1,134 @@
 // src/components/ProductCard.jsx
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Check, Zap } from 'lucide-react';
+import { ShoppingCart, Check } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const ProductCard = ({ product, badge }) => {
-  const { addToCart, cartQuantityFor } = useCart();
-  const [added, setAdded] = useState(false);
-  const [imgLoaded, setImgLoaded] = useState(false);
+  const { addToCart, cart } = useCart();
+  const [justAdded, setJustAdded] = useState(false);
 
-  const stock      = product.stock ?? 0;
-  const inCart     = cartQuantityFor(product._id);   // live quantity already in cart
-  const remaining  = stock - inCart;                 // how many more can actually be added
-  const inStock    = stock > 0;
-  const canAdd     = remaining > 0;                  // false when cart has ALL available stock
-  const lowStock   = inStock && stock <= 5;
+  const inCart    = cart.find(i => i._id === product._id);
+  const inCartQty = inCart ? inCart.quantity : 0;
+  const remaining = product.stock - inCartQty;
+  const outOfStock = remaining <= 0;
 
   const handleAdd = (e) => {
     e.preventDefault();
-    if (!canAdd) return;
+    if (outOfStock || justAdded) return;
     addToCart(product);
-    setAdded(true);
-    if (typeof window.gtag === 'function') {
-      window.gtag('event', 'add_to_cart', {
-        currency: 'NGN',
-        value: product.price,
-        items: [{ item_id: product._id, item_name: product.name, price: product.price }],
-      });
-    }
-    setTimeout(() => setAdded(false), 1800);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 1400);
   };
 
-  // ── Stock label shown under price ──────────────────────────────────────────
-  const stockLabel = (() => {
-    if (!inStock)      return { text: 'Out of Stock',          color: '#6e6e73' };
-    if (!canAdd)       return { text: `All ${stock} in cart`,  color: '#f59e0b' };
-    if (lowStock)      return { text: `Only ${remaining} left`,color: '#f59e0b' };
-    return               { text: 'In Stock',                   color: '#22c55e' };
-  })();
+  const stockLabel = () => {
+    if (product.stock === 0)  return { text: 'Out of stock', color: '#6e6e73' };
+    if (outOfStock)           return { text: 'All in cart',  color: '#f59e0b' };
+    if (product.stock <= 5)   return { text: `Only ${remaining} left`, color: '#f59e0b' };
+    return null;
+  };
+  const label = stockLabel();
 
   return (
     <motion.div
-      whileHover={{ y: -6 }}
-      transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.2 }}
       style={{
-        background: '#111',
-        border: '1px solid rgba(255,255,255,0.07)',
-        borderRadius: '20px',
-        overflow: 'hidden',
-        display: 'flex',
+        background:    '#111',
+        border:        '1px solid rgba(255,255,255,0.07)',
+        borderRadius:  '16px',
+        overflow:      'hidden',
+        display:       'flex',
         flexDirection: 'column',
-        position: 'relative',
+        position:      'relative',
+        height:        '100%',
       }}
     >
-      {/* ── Badges ── */}
-      <div style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 2, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {!inStock && (
-          <span style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: '11px', fontWeight: 600,
-            background: 'rgba(0,0,0,0.8)', color: '#6e6e73',
-            padding: '4px 10px', borderRadius: '100px', backdropFilter: 'blur(8px)',
-          }}>Out of Stock</span>
-        )}
-        {lowStock && inStock && (
-          <motion.span
-            animate={{ opacity: [1, 0.6, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            style={{
-              fontFamily: 'DM Sans, sans-serif', fontSize: '11px', fontWeight: 700,
-              background: 'rgba(229,9,20,0.9)', color: 'white',
-              padding: '4px 10px', borderRadius: '100px',
-              display: 'flex', alignItems: 'center', gap: '4px',
-            }}
-          >
-            <Zap size={10} fill="white" /> Limited Stock
-          </motion.span>
-        )}
-        {badge && (
-          <span style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: '11px', fontWeight: 700,
-            background: '#E50914', color: 'white',
-            padding: '4px 10px', borderRadius: '100px',
-          }}>{badge}</span>
-        )}
-      </div>
+      {/* Badge */}
+      {badge && (
+        <span style={{
+          position:   'absolute', top: '10px', left: '10px', zIndex: 2,
+          background: '#E50914', color: 'white',
+          fontFamily: 'DM Sans, sans-serif', fontWeight: 700,
+          fontSize: '10px', letterSpacing: '0.06em', textTransform: 'uppercase',
+          padding: '3px 8px', borderRadius: '100px',
+        }}>{badge}</span>
+      )}
 
-      {/* ── Image with zoom on hover ── */}
-      <Link to={`/product/${product._id}`} style={{ display: 'block', overflow: 'hidden', aspectRatio: '1' }}>
-        <motion.div
-          whileHover={{ scale: 1.07 }}
-          transition={{ duration: 0.4 }}
-          style={{ width: '100%', height: '100%', background: '#1a1a1a', position: 'relative' }}
-        >
-          {!imgLoaded && (
-            <div style={{
-              position: 'absolute', inset: 0,
-              background: 'linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%)',
-              backgroundSize: '200% 100%',
-              animation: 'shimmer 1.4s infinite',
-            }} />
-          )}
+      {/* Image */}
+      <Link to={`/product/${product._id}`} style={{ display: 'block', flexShrink: 0 }}>
+        <div style={{ width: '100%', aspectRatio: '1 / 1', overflow: 'hidden', background: '#1a1a1a' }}>
           {product.imageUrl ? (
             <img
               src={product.imageUrl}
-              alt={`${product.name} — buy in Nigeria`}
+              alt={product.name}
               loading="lazy"
-              decoding="async"
-              onLoad={() => setImgLoaded(true)}
-              style={{
-                width: '100%', height: '100%', objectFit: 'cover',
-                opacity: imgLoaded ? 1 : 0, transition: 'opacity 0.3s',
-              }}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.35s ease' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
             />
           ) : (
-            <div style={{
-              width: '100%', height: '100%', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', color: '#3a3a3a', fontSize: '13px',
-              fontFamily: 'DM Sans, sans-serif',
-            }}>
-              No Image
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ color: '#3a3a3a', fontSize: '11px', fontFamily: 'DM Sans, sans-serif' }}>No image</span>
             </div>
           )}
-        </motion.div>
+        </div>
       </Link>
 
-      {/* ── Info ── */}
-      <div style={{ padding: '16px 18px 18px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-        <Link to={`/product/${product._id}`}>
-          <h3 style={{
-            fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '15px',
-            color: 'white', lineHeight: 1.3, margin: 0,
-            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-          }}>
-            {product.name}
-          </h3>
+      {/* Content */}
+      <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+        {/* Category pill */}
+        <span style={{
+          fontFamily: 'DM Sans, sans-serif', fontSize: '10px', fontWeight: 500,
+          color: '#6e6e73', textTransform: 'capitalize', letterSpacing: '0.04em',
+        }}>{product.category}</span>
+
+        {/* Name */}
+        <Link to={`/product/${product._id}`} style={{ textDecoration: 'none' }}>
+          <p style={{
+            fontFamily:   'Syne, sans-serif', fontWeight: 700,
+            color:        'white', fontSize: '13px', lineHeight: 1.35,
+            display:      '-webkit-box', WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical', overflow: 'hidden',
+            margin: 0, transition: 'color 0.2s',
+          }}
+            onMouseEnter={e => e.currentTarget.style.color = '#E50914'}
+            onMouseLeave={e => e.currentTarget.style.color = 'white'}
+          >{product.name}</p>
         </Link>
 
-        <p style={{
-          fontFamily: 'DM Sans, sans-serif', color: '#6e6e73', fontSize: '13px',
-          lineHeight: 1.5, margin: 0,
-          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-        }}>
-          {product.description}
-        </p>
-
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '10px' }}>
-          {/* Price */}
-          <span style={{
-            fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '20px',
-            color: '#22c55e', letterSpacing: '-0.02em',
-          }}>
+        {/* Price + cart row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '8px' }}>
+          <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, color: '#22c55e', fontSize: '14px' }}>
             ₦{Number(product.price).toLocaleString()}
           </span>
-
-          {/* Add to cart — disabled when out of stock OR all stock is already in cart */}
-          <motion.button
+          <button
             onClick={handleAdd}
-            disabled={!canAdd}
-            whileTap={canAdd ? { scale: 0.9 } : {}}
-            title={!inStock ? 'Out of stock' : !canAdd ? `All ${stock} already in your cart` : 'Add to cart'}
+            disabled={outOfStock}
+            title={outOfStock ? 'Out of stock' : 'Add to cart'}
             style={{
-              width: '40px', height: '40px', borderRadius: '12px', border: 'none',
-              background: added ? '#22c55e' : canAdd ? '#E50914' : 'rgba(255,255,255,0.06)',
-              color: canAdd ? 'white' : '#3a3a3a',
+              width: '32px', height: '32px', borderRadius: '10px', border: 'none',
+              background: justAdded ? 'rgba(34,197,94,0.15)' : outOfStock ? 'rgba(255,255,255,0.04)' : 'rgba(229,9,20,0.12)',
+              color:      justAdded ? '#22c55e' : outOfStock ? '#3a3a3a' : '#E50914',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: canAdd ? 'pointer' : 'not-allowed',
-              transition: 'background 0.3s', flexShrink: 0,
+              cursor: outOfStock ? 'not-allowed' : 'pointer',
+              transition: 'background 0.2s, color 0.2s', flexShrink: 0,
             }}
-            aria-label="Add to cart"
+            onMouseEnter={e => { if (!outOfStock && !justAdded) e.currentTarget.style.background = 'rgba(229,9,20,0.25)'; }}
+            onMouseLeave={e => { if (!outOfStock && !justAdded) e.currentTarget.style.background = 'rgba(229,9,20,0.12)'; }}
           >
-            <AnimatePresence mode="wait">
-              {added
-                ? <motion.span key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                    <Check size={17} strokeWidth={2.5} />
-                  </motion.span>
-                : <motion.span key="cart" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                    <ShoppingCart size={17} strokeWidth={1.5} />
-                  </motion.span>
-              }
-            </AnimatePresence>
-          </motion.button>
+            {justAdded ? <Check size={14} strokeWidth={2.5} /> : <ShoppingCart size={14} strokeWidth={1.8} />}
+          </button>
         </div>
 
-        {/* Stock indicator — shows remaining after cart deduction */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: stockLabel.color }} />
-          <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: stockLabel.color }}>
-            {stockLabel.text}
-          </span>
-        </div>
+        {/* Stock warning */}
+        {label && (
+          <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', color: label.color, margin: 0 }}>
+            {label.text}
+          </p>
+        )}
       </div>
-
-      <style>{`
-        @keyframes shimmer {
-          0%   { background-position: -200% 0; }
-          100% { background-position:  200% 0; }
-        }
-      `}</style>
     </motion.div>
   );
 };

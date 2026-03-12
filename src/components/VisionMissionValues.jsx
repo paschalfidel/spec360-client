@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { Sparkles, Target, Heart, Rocket, Shield } from 'lucide-react';
+import { Sparkles, Target, Heart, Rocket, Shield, Truck } from 'lucide-react';
 import ImageWithPlaceholder from './ImageWithPlaceholder';
 
 const values = [
@@ -9,6 +9,7 @@ const values = [
   { icon: Heart, title: 'Special Service', desc: 'People-first, trust-driven at every step.' },
   { icon: Rocket, title: 'Innovation', desc: 'Continuous improvement through learning.' },
   { icon: Shield, title: 'Integrity', desc: 'Honest advice and fully reliable delivery.' },
+  { icon: Truck,  title: 'Swift Delivery',           desc: 'Fast, trackable dispatch to Lagos, Owerri & beyond' },
 ];
 
 const VisionMissionValues = () => {
@@ -65,7 +66,7 @@ const VisionMissionValues = () => {
                 style={{ opacity: 0.2 }}
                 placeholderText=""
               />
-              <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(17,17,17,0.95) 50%, rgba(17,17,17,0.6) 100%)' }} />
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(17,17,17,0.95) 30%, rgba(17,17,17,0.6) 100%)' }} />
               <div className="relative z-10 flex flex-col justify-end" style={{ padding: '36px', height: '100%' }}>
                 <div className="w-8 h-px bg-accent" style={{ marginBottom: '16px' }} />
                 <h3 className="font-display font-bold text-white tracking-tight" style={{ fontSize: '26px', marginBottom: '16px' }}>{card.title}</h3>
@@ -97,7 +98,7 @@ const VisionMissionValues = () => {
           Core <span className="text-accent">Values</span>
         </motion.h2>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5" style={{ gap: '16px' }}>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: '16px' }}>
           {values.map((val, i) => {
             const Icon = val.icon;
             return (
