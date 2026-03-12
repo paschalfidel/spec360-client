@@ -1,6 +1,8 @@
+/* src/index.css */
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
 @import "tailwindcss";
 
+/* ── Design tokens ────────────────────────────────────────────────────────── */
 @theme {
   --color-dark: #080808;
   --color-dark-2: #111111;
@@ -17,11 +19,30 @@
   --font-body: 'DM Sans', sans-serif;
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* ── Dark / Light mode vars ───────────────────────────────────────────────── */
+:root {
+  --bg:        #080808;
+  --bg-2:      #111111;
+  --bg-3:      #1a1a1a;
+  --text:      #f5f5f7;
+  --text-muted:#a1a1a6;
+  --text-dim:  #6e6e73;
+  --border:    rgba(255,255,255,0.08);
+  --nav-h:     74px; /* updated to match bigger navbar */
 }
+
+[data-theme='light'] {
+  --bg:        #fafafa;
+  --bg-2:      #ffffff;
+  --bg-3:      #f0f0f0;
+  --text:      #0a0a0a;
+  --text-muted:#3a3a3a;
+  --text-dim:  #6e6e73;
+  --border:    rgba(0,0,0,0.1);
+}
+
+/* ── Reset ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
   scroll-behavior: smooth;
@@ -31,33 +52,43 @@ html {
 }
 
 body {
-  background-color: var(--color-dark);
-  color: var(--color-gray-1);
+  background-color: var(--bg);
+  color: var(--text);
   font-family: var(--font-body);
   font-size: 17px;
   line-height: 1.6;
   overflow-x: hidden;
+  transition: background-color 0.3s, color 0.3s;
 }
 
-/* Display headings use Syne */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   letter-spacing: -0.02em;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: var(--color-dark); }
-::-webkit-scrollbar-thumb { background: var(--color-dark-3); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
-
-/* Selection */
-::selection {
-  background: var(--color-accent);
-  color: white;
+/* ── Accessibility: screen-reader only ───────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
-/* Noise texture overlay for depth */
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
+
+/* ── Selection ────────────────────────────────────────────────────────────── */
+::selection { background: var(--color-accent); color: white; }
+
+/* ── Noise texture ────────────────────────────────────────────────────────── */
 body::before {
   content: '';
   position: fixed;
@@ -68,52 +99,19 @@ body::before {
   opacity: 0.4;
 }
 
-
-/* Navbar is fixed ~64px tall. All non-hero pages clear it via App.jsx main pt-16. */
-
-
-/* Utility classes */
-/* Navbar is fixed at exactly 64px (py-4=32px + logo h-8=32px).
-   Non-hero pages add padding-top: 64px to their own section.
-   Hero is full-bleed and intentionally sits behind the transparent navbar. */
-:root {
-  --nav-h: 64px;
-}
-
-/*
-  .site-container
-  ─────────────────────────────────────────────────────────────
-  Sections span 100% viewport width (background fills edge-to-edge).
-  Content inside is centered with consistent horizontal padding only.
-  No max-width cap — content fills the screen properly.
-  Side padding: 20px mobile → 32px tablet → 48px desktop max.
-  This keeps content readable without wasting screen real estate.
-*/
+/* ── Layout ───────────────────────────────────────────────────────────────── */
 .site-container {
   width: 100%;
   padding-left: clamp(20px, 3.5vw, 48px);
   padding-right: clamp(20px, 3.5vw, 48px);
 }
 
-/* Utility classes */
+/* ── Typography utilities ─────────────────────────────────────────────────── */
 .font-display { font-family: var(--font-display); }
-.font-body { font-family: var(--font-body); }
-
+.font-body    { font-family: var(--font-body); }
 .text-balance { text-wrap: balance; }
 
-/* Section divider */
-.section-divider {
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--color-border), transparent);
-}
-
-/* Glow effect */
-.glow-accent {
-  box-shadow: 0 0 60px rgba(229, 9, 20, 0.15);
-}
-
-/* Gradient text */
+/* ── Gradient text ────────────────────────────────────────────────────────── */
 .gradient-text {
   background: linear-gradient(135deg, #fff 0%, #a1a1a6 100%);
   -webkit-background-clip: text;
@@ -121,7 +119,7 @@ body::before {
   background-clip: text;
 }
 
-/* Magnetic button base */
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -136,6 +134,7 @@ body::before {
   border-radius: 100px;
   border: none;
   cursor: pointer;
+  text-decoration: none;
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   position: relative;
   overflow: hidden;
@@ -162,14 +161,15 @@ body::before {
   align-items: center;
   gap: 8px;
   background: transparent;
-  color: var(--color-gray-1);
+  color: var(--text);
   font-family: var(--font-display);
   font-weight: 500;
   font-size: 15px;
   padding: 13px 32px;
   border-radius: 100px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border);
   cursor: pointer;
+  text-decoration: none;
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   backdrop-filter: blur(10px);
 }
@@ -180,10 +180,10 @@ body::before {
   transform: scale(1.03);
 }
 
-/* Card surface */
+/* ── Card surface ─────────────────────────────────────────────────────────── */
 .card-surface {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
   border-radius: 20px;
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
@@ -194,32 +194,25 @@ body::before {
   box-shadow: 0 24px 48px rgba(0,0,0,0.4);
 }
 
-/* Input */
+/* ── Input ────────────────────────────────────────────────────────────────── */
 .input-field {
   width: 100%;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px 18px;
-  color: white;
+  color: var(--text);
   font-family: var(--font-body);
   font-size: 15px;
   outline: none;
   transition: border-color 0.3s;
 }
 
-.input-field:focus {
-  border-color: var(--color-accent);
-}
+.input-field:focus { border-color: var(--color-accent); }
+.input-field::placeholder { color: var(--text-dim); }
 
-.input-field::placeholder {
-  color: var(--color-gray-3);
-}
-
-/* Animated underline for nav links */
-.nav-link {
-  position: relative;
-}
+/* ── Nav link underline animation ─────────────────────────────────────────── */
+.nav-link { position: relative; }
 .nav-link::after {
   content: '';
   position: absolute;
@@ -230,7 +223,24 @@ body::before {
   background: var(--color-accent);
   transition: width 0.3s ease;
 }
-.nav-link:hover::after,
-.nav-link.active::after {
+.nav-link:hover::after, .nav-link.active::after { width: 100%; }
+
+/* ── Shimmer skeleton ─────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #111 25%, #1a1a1a 50%, #111 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+/* ── Misc ─────────────────────────────────────────────────────────────────── */
+.glow-accent  { box-shadow: 0 0 60px rgba(229, 9, 20, 0.15); }
+.section-divider {
   width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
 }

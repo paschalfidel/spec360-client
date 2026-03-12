@@ -1,5 +1,5 @@
 // src/components/Navbar.jsx
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ShoppingCart, ChevronDown, ArrowUpRight, Search } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -7,21 +7,21 @@ import { useCart } from '../context/CartContext';
 import { fetchProducts } from '../services/api';
 
 const navLinks = [
-  { name: 'Home', to: '/', hash: 'hero' },
-  { name: 'About', to: '/', hash: 'about' },
+  { name: 'Home',        to: '/', hash: 'hero' },
+  { name: 'About',       to: '/', hash: 'about' },
   {
     name: 'Services',
     dropdown: [
       { name: 'Phones & Accessories', to: '/services/phones-accessories' },
-      { name: 'Repairs', to: '/services/repairs' },
-      { name: 'Web Development', to: '/services/web-development' },
-      { name: 'POS Services', to: '/services/pos' },
-      { name: 'Connectivity', to: '/services/connectivity' },
-      { name: 'Logistics', to: '/services/logistics' },
+      { name: 'Repairs',              to: '/services/repairs' },
+      { name: 'Web Development',      to: '/services/web-development' },
+      { name: 'POS Services',         to: '/services/pos' },
+      { name: 'Connectivity',         to: '/services/connectivity' },
+      { name: 'Logistics',            to: '/services/logistics' },
     ],
   },
   { name: 'Our Identity', to: '/', hash: 'vision-mission-values' },
-  { name: 'Contact', to: '/', hash: 'contact' },
+  { name: 'Contact',      to: '/', hash: 'contact' },
 ];
 
 const scrollToHash = (hash) => {
@@ -33,141 +33,111 @@ const scrollToHash = (hash) => {
 };
 
 const Navbar = () => {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileOpen,         setMobileOpen]         = useState(false);
+  const [mobileServicesOpen, setMobileServicesOpen]  = useState(false);
+  const [scrolled,           setScrolled]           = useState(false);
+  const [dropdownOpen,       setDropdownOpen]       = useState(false);
+  const [searchOpen,         setSearchOpen]         = useState(false);
+  const [searchQuery,        setSearchQuery]        = useState('');
+  const [allProducts,        setAllProducts]        = useState([]);
+  const [searchLoading,      setSearchLoading]      = useState(false);
 
-  // Search state
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [allProducts, setAllProducts] = useState([]);
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-
-  // Refs
-  const dropdownTimeout = useRef(null);
+  const dropdownTimeout  = useRef(null);
   const desktopSearchRef = useRef(null);
-  const mobileSearchRef = useRef(null);
-  const searchInputRef = useRef(null);
+  const mobileSearchRef  = useRef(null);
+  const searchInputRef   = useRef(null);
 
-  const { cart } = useCart();
-  const location = useLocation();
-  const navigate = useNavigate();
+  const { cart }  = useCart();
+  const location  = useLocation();
+  const navigate  = useNavigate();
   const cartCount = cart.reduce((t, i) => t + i.quantity, 0);
 
-  // Scroll listener
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Close mobile menu and search on route change
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+  // Reset all UI state synchronously when route changes.
+  // useLayoutEffect runs before paint so there's no flash of open menus.
+  useLayoutEffect(() => {
     setMobileOpen(false);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileServicesOpen(false);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchOpen(false);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchQuery('');
   }, [location.pathname]);
 
-  // Hash scroll
   useEffect(() => {
     if (location.hash) scrollToHash(location.hash);
   }, [location.pathname, location.hash]);
 
-  // Lock body scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
 
-  // Fetch products when search is first opened
   useEffect(() => {
-    if (searchOpen && allProducts.length === 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!searchOpen || allProducts.length > 0) return;
+    const load = async () => {
       setSearchLoading(true);
-      fetchProducts()
-        .then(res => setAllProducts(res.data))
-        .catch(() => {})
-        .finally(() => setSearchLoading(false));
-    }
+      try {
+        const res = await fetchProducts();
+        setAllProducts(res.data);
+      } catch {
+        // silently ignore — search just won't show results
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+    load();
   }, [searchOpen, allProducts.length]);
 
-  // Focus input when search opens (with cleanup)
   useEffect(() => {
     if (searchOpen) {
-      const timeoutId = setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 50);
-      return () => clearTimeout(timeoutId);
+      const t = setTimeout(() => searchInputRef.current?.focus(), 50);
+      return () => clearTimeout(t);
     }
   }, [searchOpen]);
 
-  // Filter products client‑side as user types
-  useEffect(() => {
+  // Derived state — no effect needed. useMemo recomputes whenever inputs change.
+  const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSearchResults([]);
-      return;
-    }
-    const filtered = allProducts.filter(p =>
+    if (!q) return [];
+    return allProducts.filter(p =>
       p.name.toLowerCase().includes(q) ||
       p.category.toLowerCase().includes(q) ||
       (p.description && p.description.toLowerCase().includes(q))
-    ).slice(0, 6); // cap at 6 results
-    setSearchResults(filtered);
+    ).slice(0, 6);
   }, [searchQuery, allProducts]);
 
-  // Close search on outside click (uses correct container based on viewport)
   useEffect(() => {
     const handleClick = (e) => {
-      // Determine which container is currently active
-      const isMobile = window.innerWidth < 768;
+      const isMobile  = window.innerWidth < 768;
       const container = isMobile ? mobileSearchRef.current : desktopSearchRef.current;
       if (container && !container.contains(e.target)) {
         setSearchOpen(false);
         setSearchQuery('');
       }
     };
-    if (searchOpen) {
-      document.addEventListener('mousedown', handleClick);
-    }
+    if (searchOpen) document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [searchOpen]);
 
-  // Esc key closes search
   useEffect(() => {
     const handleKey = (e) => {
-      if (e.key === 'Escape') {
-        setSearchOpen(false);
-        setSearchQuery('');
-      }
+      if (e.key === 'Escape') { setSearchOpen(false); setSearchQuery(''); }
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, []);
 
-  const handleDropdownEnter = () => {
-    clearTimeout(dropdownTimeout.current);
-    setDropdownOpen(true);
-  };
-  const handleDropdownLeave = () => {
-    dropdownTimeout.current = setTimeout(() => setDropdownOpen(false), 150);
-  };
+  const handleDropdownEnter = () => { clearTimeout(dropdownTimeout.current); setDropdownOpen(true); };
+  const handleDropdownLeave = () => { dropdownTimeout.current = setTimeout(() => setDropdownOpen(false), 150); };
 
   const handleHashClick = (e, link) => {
     setMobileOpen(false);
     setDropdownOpen(false);
-    if (link.hash && location.pathname === '/') {
-      e.preventDefault();
-      scrollToHash(`#${link.hash}`);
-    }
+    if (link.hash && location.pathname === '/') { e.preventDefault(); scrollToHash(`#${link.hash}`); }
   };
 
   const isActive = (link) => {
@@ -183,32 +153,36 @@ const Navbar = () => {
 
   return (
     <>
-      {/* ── Main Navbar ───────────────────────────────────────────────────── */}
+      {/* ── Main Navbar ───────────────────────────────────────────────────────
+          KEY FIX: On mobile, when the overlay is open we hide this bar entirely
+          with `hidden` so the logo doesn't appear twice (once here, once in the
+          overlay header). On md+ screens it always shows (`md:block`).
+      ──────────────────────────────────────────────────────────────────────── */}
       <motion.nav
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled
-            ? 'bg-[#080808]/95 backdrop-blur-2xl border-b border-white/[0.06]'
-            : 'bg-transparent'
-        }`}
-        style={{ padding: scrolled ? '18px 0' : '24px 0' }}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500
+          ${scrolled ? 'bg-[#080808]/95 backdrop-blur-2xl border-b border-white/[0.06]' : 'bg-transparent'}
+          ${mobileOpen ? 'hidden lg:block' : 'block'}
+        `}
+        style={{ padding: scrolled ? "18px 0" : "24px 0", position: "fixed", top: 0, left: 0, right: 0 }}
       >
         <div className="site-container flex items-center justify-between" style={{ gap: '24px' }}>
 
-          {/* ── Logo ── */}
+          {/* Logo */}
           <Link to="/" onClick={() => scrollToHash('#hero')}
             className="flex items-center flex-shrink-0" style={{ gap: '10px' }}>
-            <img src="/images/spec360-logo.PNG" alt="Spec360" style={{ height: '42px', width: 'auto' }}
+            <img src="/images/spec360-logo.PNG" alt="Spec360"
+              style={{ height: '42px', width: 'auto' }}
               onError={e => { e.target.style.display = 'none'; }} />
             <span className="font-display font-bold text-white tracking-tight" style={{ fontSize: '23px' }}>
               Spec<span className="text-accent">360</span>
             </span>
           </Link>
 
-          {/* ── Desktop Nav Links ── */}
-          <div className="hidden md:flex items-center flex-1" style={{ gap: '40px', justifyContent: 'center' }}>
+          {/* Desktop Nav Links */}
+          <div className="hidden lg:flex items-center flex-1" style={{ gap: '40px', justifyContent: 'center' }}>
             {navLinks.map(link => {
               if (link.dropdown) {
                 return (
@@ -223,7 +197,6 @@ const Navbar = () => {
                       {link.name}
                       <ChevronDown size={15} className={`transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
-
                     <AnimatePresence>
                       {dropdownOpen && (
                         <motion.div
@@ -270,38 +243,22 @@ const Navbar = () => {
             })}
           </div>
 
-          {/* ── Desktop Right: Search + Cart + CTA ── */}
-          <div className="hidden md:flex items-center flex-shrink-0" style={{ gap: '14px' }}>
-
-            {/* Search - desktop */}
+          {/* Desktop Right: Search + Cart + CTA */}
+          <div className="hidden lg:flex items-center flex-shrink-0" style={{ gap: '14px' }}>
             <div ref={desktopSearchRef} className="relative">
               <AnimatePresence mode="wait">
                 {searchOpen ? (
-                  <motion.div
-                    key="search-input"
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: '240px' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    transition={{ duration: 0.25, ease: 'easeOut' }}
-                    className="relative overflow-hidden"
-                    style={{ borderRadius: '100px' }}
+                  <motion.div key="search-input"
+                    initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: '240px' }}
+                    exit={{ opacity: 0, width: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}
+                    className="relative overflow-hidden" style={{ borderRadius: '100px' }}
                   >
                     <Search size={15} className="absolute text-[#6e6e73] pointer-events-none"
                       style={{ left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      placeholder="Search products..."
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
+                    <input ref={searchInputRef} type="text" placeholder="Search products..."
+                      value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                       className="font-body text-white placeholder-[#6e6e73] outline-none w-full"
-                      style={{
-                        background: 'rgba(255,255,255,0.07)',
-                        border: '1px solid rgba(255,255,255,0.12)',
-                        borderRadius: '100px',
-                        padding: '9px 36px 9px 38px',
-                        fontSize: '14px',
-                      }}
+                      style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '100px', padding: '9px 36px 9px 38px', fontSize: '14px' }}
                     />
                     <button onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
                       className="absolute text-[#6e6e73] hover:text-white transition-colors"
@@ -310,63 +267,43 @@ const Navbar = () => {
                     </button>
                   </motion.div>
                 ) : (
-                  <motion.button
-                    key="search-icon"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                  <motion.button key="search-icon" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     onClick={() => setSearchOpen(true)}
-                    className="text-[#a1a1a6] hover:text-white transition-colors duration-200"
-                    aria-label="Search products"
-                  >
+                    className="text-[#a1a1a6] hover:text-white transition-colors duration-200" aria-label="Search products">
                     <Search size={21} strokeWidth={1.5} />
                   </motion.button>
                 )}
               </AnimatePresence>
 
-              {/* Search Results Dropdown (desktop) */}
               <AnimatePresence>
                 {searchOpen && searchQuery.trim() && (
                   <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    transition={{ duration: 0.18 }}
+                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }} transition={{ duration: 0.18 }}
                     className="absolute right-0 bg-[#141414] border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden"
                     style={{ top: 'calc(100% + 12px)', width: '300px', zIndex: 100 }}
                   >
                     {searchLoading ? (
-                      <div className="font-body text-[#6e6e73] text-center" style={{ padding: '20px', fontSize: '14px' }}>
-                        Searching...
-                      </div>
+                      <div className="font-body text-[#6e6e73] text-center" style={{ padding: '20px', fontSize: '14px' }}>Searching...</div>
                     ) : searchResults.length === 0 ? (
-                      <div className="font-body text-[#6e6e73] text-center" style={{ padding: '20px', fontSize: '14px' }}>
-                        No products found for "{searchQuery}"
-                      </div>
+                      <div className="font-body text-[#6e6e73] text-center" style={{ padding: '20px', fontSize: '14px' }}>No products found for "{searchQuery}"</div>
                     ) : (
                       <>
-                        <div className="font-body text-[#3a3a3a] uppercase tracking-wider"
-                          style={{ padding: '12px 16px 8px', fontSize: '11px' }}>
+                        <div className="font-body text-[#3a3a3a] uppercase tracking-wider" style={{ padding: '12px 16px 8px', fontSize: '11px' }}>
                           {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
                         </div>
                         {searchResults.map(product => (
                           <button key={product._id} onClick={() => handleResultClick(product)}
                             className="w-full flex items-center hover:bg-white/[0.04] transition-colors text-left"
                             style={{ padding: '10px 16px', gap: '12px' }}>
-                            {/* Thumbnail */}
-                            <div className="rounded-lg overflow-hidden flex-shrink-0"
-                              style={{ width: '40px', height: '40px', background: '#1a1a1a' }}>
+                            <div className="rounded-lg overflow-hidden flex-shrink-0" style={{ width: '40px', height: '40px', background: '#1a1a1a' }}>
                               {product.imageUrl
                                 ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                                : <div className="w-full h-full flex items-center justify-center text-[#3a3a3a]" style={{ fontSize: '10px' }}>IMG</div>
-                              }
+                                : <div className="w-full h-full flex items-center justify-center text-[#3a3a3a]" style={{ fontSize: '10px' }}>IMG</div>}
                             </div>
-                            {/* Info */}
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <p className="font-display font-semibold text-white truncate" style={{ fontSize: '14px' }}>{product.name}</p>
-                              <p className="font-body text-accent font-medium" style={{ fontSize: '12px', marginTop: '1px' }}>
-                                ₦{Number(product.price).toLocaleString()}
-                              </p>
+                              <p className="font-body text-accent font-medium" style={{ fontSize: '12px', marginTop: '1px' }}>₦{Number(product.price).toLocaleString()}</p>
                             </div>
                             <span className="font-body text-[#6e6e73] capitalize flex-shrink-0"
                               style={{ fontSize: '11px', background: 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: '100px' }}>
@@ -374,13 +311,11 @@ const Navbar = () => {
                             </span>
                           </button>
                         ))}
-                        {/* View all link */}
                         <Link to="/services/phones-accessories"
                           onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
                           className="flex items-center justify-center gap-1.5 font-body text-accent hover:text-white transition-colors"
                           style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '13px' }}>
-                          View all products
-                          <ArrowUpRight size={13} />
+                          View all products <ArrowUpRight size={13} />
                         </Link>
                       </>
                     )}
@@ -389,7 +324,6 @@ const Navbar = () => {
               </AnimatePresence>
             </div>
 
-            {/* Cart */}
             <Link to="/cart" className="relative text-[#a1a1a6] hover:text-white transition-colors duration-200">
               <ShoppingCart size={21} strokeWidth={1.5} />
               <AnimatePresence>
@@ -403,7 +337,6 @@ const Navbar = () => {
               </AnimatePresence>
             </Link>
 
-            {/* CTA */}
             <Link to="/#contact"
               onClick={e => { if (location.pathname === '/') { e.preventDefault(); scrollToHash('#contact'); } }}
               className="btn-primary" style={{ fontSize: '15px', padding: '12px 24px' }}>
@@ -411,8 +344,8 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* ── Mobile: Search + Cart + Hamburger ── */}
-          <div className="flex md:hidden items-center" style={{ gap: '14px' }}>
+          {/* Mobile: Search + Cart + Hamburger */}
+          <div className="flex lg:hidden items-center" style={{ gap: '14px' }}>
             <button onClick={() => setSearchOpen(p => !p)}
               className="text-[#a1a1a6] hover:text-white transition-colors" aria-label="Search">
               <Search size={21} strokeWidth={1.5} />
@@ -433,35 +366,23 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* ── Mobile Search Bar (below navbar) ── */}
+        {/* Mobile Search Bar */}
         <AnimatePresence>
           {searchOpen && !mobileOpen && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.22 }}
-              className="md:hidden overflow-hidden"
+              initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22 }}
+              className="lg:hidden overflow-hidden"
               style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: '#080808' }}
             >
               <div ref={mobileSearchRef} className="site-container" style={{ padding: '12px 20px' }}>
                 <div className="relative">
                   <Search size={15} className="absolute text-[#6e6e73] pointer-events-none"
                     style={{ left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    placeholder="Search products..."
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
+                  <input ref={searchInputRef} type="text" placeholder="Search products..."
+                    value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                     className="font-body text-white placeholder-[#6e6e73] outline-none w-full"
-                    style={{
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '12px',
-                      padding: '12px 40px 12px 40px',
-                      fontSize: '15px',
-                    }}
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px 40px 12px 40px', fontSize: '15px' }}
                     autoFocus
                   />
                   {searchQuery && (
@@ -472,35 +393,24 @@ const Navbar = () => {
                     </button>
                   )}
                 </div>
-
-                {/* Mobile search results */}
                 {searchQuery.trim() && (
-                  <div className="bg-[#111] border border-white/[0.07] rounded-xl overflow-hidden"
-                    style={{ marginTop: '10px' }}>
+                  <div className="bg-[#111] border border-white/[0.07] rounded-xl overflow-hidden" style={{ marginTop: '10px' }}>
                     {searchLoading ? (
                       <p className="font-body text-[#6e6e73] text-center" style={{ padding: '16px', fontSize: '14px' }}>Searching...</p>
                     ) : searchResults.length === 0 ? (
-                      <p className="font-body text-[#6e6e73] text-center" style={{ padding: '16px', fontSize: '14px' }}>
-                        No products found for "{searchQuery}"
-                      </p>
+                      <p className="font-body text-[#6e6e73] text-center" style={{ padding: '16px', fontSize: '14px' }}>No products found for "{searchQuery}"</p>
                     ) : (
                       <>
                         {searchResults.map(product => (
                           <button key={product._id} onClick={() => handleResultClick(product)}
                             className="w-full flex items-center hover:bg-white/[0.04] transition-colors text-left"
                             style={{ padding: '12px 16px', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                            <div className="rounded-lg overflow-hidden flex-shrink-0"
-                              style={{ width: '44px', height: '44px', background: '#1a1a1a' }}>
-                              {product.imageUrl
-                                ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                                : <div className="w-full h-full" />
-                              }
+                            <div className="rounded-lg overflow-hidden flex-shrink-0" style={{ width: '44px', height: '44px', background: '#1a1a1a' }}>
+                              {product.imageUrl ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <p className="font-display font-semibold text-white truncate" style={{ fontSize: '15px' }}>{product.name}</p>
-                              <p className="font-body text-accent font-medium" style={{ fontSize: '13px', marginTop: '2px' }}>
-                                ₦{Number(product.price).toLocaleString()}
-                              </p>
+                              <p className="font-body text-accent font-medium" style={{ fontSize: '13px', marginTop: '2px' }}>₦{Number(product.price).toLocaleString()}</p>
                             </div>
                             <ArrowUpRight size={15} className="text-[#6e6e73] flex-shrink-0" />
                           </button>
@@ -521,7 +431,11 @@ const Navbar = () => {
         </AnimatePresence>
       </motion.nav>
 
-      {/* ── Mobile Menu Overlay ───────────────────────────────────────────── */}
+      {/* ── Mobile Menu Overlay ───────────────────────────────────────────────
+          KEY FIX: zIndex 51 — one above the navbar's z-50.
+          Previously this was z-40 which let the navbar render on top of it,
+          causing the logo to bleed through and appear twice.
+      ──────────────────────────────────────────────────────────────────────── */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -530,15 +444,16 @@ const Navbar = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: '100%' }}
             transition={{ duration: 0.32, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="fixed inset-0 z-40 md:hidden flex flex-col"
-            style={{ background: '#080808', overflowY: 'auto' }}
+            className="fixed inset-0 lg:hidden flex flex-col"
+            style={{ background: '#080808', overflowY: 'auto', zIndex: 51 }}
           >
-            {/* Mobile header */}
+            {/* Overlay header — the only logo shown on mobile when menu is open */}
             <div className="flex items-center justify-between"
               style={{ padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
               <Link to="/" onClick={() => { setMobileOpen(false); scrollToHash('#hero'); }}
                 className="flex items-center" style={{ gap: '8px' }}>
-                <img src="/images/spec360-logo.PNG" alt="Spec360" style={{ height: '36px', width: 'auto' }}
+                <img src="/images/spec360-logo.PNG" alt="Spec360"
+                  style={{ height: '36px', width: 'auto' }}
                   onError={e => { e.target.style.display = 'none'; }} />
                 <span className="font-display font-bold text-white tracking-tight" style={{ fontSize: '20px' }}>
                   Spec<span className="text-accent">360</span>
@@ -557,8 +472,7 @@ const Navbar = () => {
                   return (
                     <div key={link.name}>
                       <motion.button
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
+                        initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.05 }}
                         onClick={() => setMobileServicesOpen(p => !p)}
                         className="w-full flex items-center justify-between font-display font-semibold text-white hover:text-accent transition-colors"
@@ -567,20 +481,16 @@ const Navbar = () => {
                         <span>{link.name}</span>
                         <ChevronDown size={20} className={`transition-transform duration-300 text-[#6e6e73] ${mobileServicesOpen ? 'rotate-180' : ''}`} />
                       </motion.button>
-
                       <AnimatePresence>
                         {mobileServicesOpen && (
                           <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.25 }}
+                            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}
                             style={{ overflow: 'hidden', background: 'rgba(255,255,255,0.02)' }}
                           >
                             {link.dropdown.map((item, j) => (
                               <motion.div key={item.name}
-                                initial={{ opacity: 0, x: 10 }}
-                                animate={{ opacity: 1, x: 0 }}
+                                initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: j * 0.04 }}>
                                 <Link to={item.to} onClick={() => setMobileOpen(false)}
                                   className={`flex items-center justify-between font-body transition-colors ${
@@ -598,11 +508,9 @@ const Navbar = () => {
                     </div>
                   );
                 }
-
                 return (
                   <motion.div key={link.name}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}>
                     <Link
                       to={link.hash ? `${link.to}#${link.hash}` : link.to}
@@ -621,9 +529,7 @@ const Navbar = () => {
 
             {/* CTA */}
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
               style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}
             >
               <Link to="/#contact"
